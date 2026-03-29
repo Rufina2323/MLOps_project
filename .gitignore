@@ -205,5 +205,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-/winequality-red.csv
 .DS_Store
+/src/models/
+/src/model_comparison.csv
