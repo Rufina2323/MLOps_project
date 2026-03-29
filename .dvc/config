@@ -1,0 +1,7 @@
+# .dvc/config
+[core]
+    remote = gafiyatullinarufina
+[remote "gafiyatullinarufina"]
+    url = s3://gafiyatullinarufina/wine-data
+    use_ssl = false
+    endpointurl = http://85.239.47.84:9000
