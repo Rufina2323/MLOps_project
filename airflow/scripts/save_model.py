@@ -13,7 +13,6 @@ def save_model_to_dvc(**context):
 
     model_path = ti.xcom_pull(task_ids="train_model", key="model_path")
     metadata_path = ti.xcom_pull(task_ids="train_model", key="metadata_path")
-    model_dir = ti.xcom_pull(task_ids="train_model", key="model_dir")
     metrics = ti.xcom_pull(task_ids="train_model", key="metrics")
 
     if not model_path or not metadata_path:

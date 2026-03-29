@@ -2,9 +2,8 @@ import subprocess
 import pickle
 import json
 import logging
-import os
-from pathlib import Path
 from typing import Optional
+import numpy as np
 
 from config import PROJECT_ROOT, MODEL_PATH, METADATA_PATH
 
@@ -24,11 +23,6 @@ class ModelManager:
 
     def pull_from_dvc(self) -> None:
         logger.info("Pulling model from DVC...")
-
-        dvc_candidates = [
-            PROJECT_ROOT / "models.dvc",
-            PROJECT_ROOT / "models" / ".gitignore",
-        ]
 
         result = subprocess.run(
             ["dvc", "pull", "-v"],
@@ -91,8 +85,6 @@ class ModelManager:
         if not self._is_loaded:
             raise RuntimeError("Model is not loaded")
 
-        import numpy as np
-
         X = np.array(features).reshape(1, -1)
 
         if self.scaler is not None:
@@ -103,7 +95,7 @@ class ModelManager:
 
     def get_info(self) -> dict:
         if not self._is_loaded or not self.metadata:
-            return {"error": "Model not loaded"}        
+            return {"error": "Model not loaded"}
 
         return {
             "model_name": self.metadata.get("model_name", "unknown"),
@@ -115,5 +107,4 @@ class ModelManager:
         }
 
 
-# Глобальный экземпляр
 model_manager = ModelManager()

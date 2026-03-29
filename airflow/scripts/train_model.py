@@ -101,7 +101,7 @@ def train_model(**context):
     model_path = os.path.join(model_dir, output_config["model_filename"])
     with open(model_path, "wb") as f:
         pickle.dump({"model": model, "scaler": scaler}, f)
-    logger.info(f"Model saved to {model_path}")    
+    logger.info(f"Model saved to {model_path}")
 
     # Формируем метаданные
     metadata = {

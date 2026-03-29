@@ -5,12 +5,12 @@ from airflow.operators.python import PythonOperator
 import sys
 import os
 
-# Добавляем путь к скриптам
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
-
 from load_data import pull_data_from_dvc
 from train_model import train_model
 from save_model import save_model_to_dvc
+
+# Добавляем путь к скриптам
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 
 default_args = {
