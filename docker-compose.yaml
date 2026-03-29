@@ -103,6 +103,30 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  wine-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      PROJECT_ROOT: /app/project
+      PYTHONPATH: /app/project/api
+      # DVC credentials (если нужно)
+      # AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      # AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      # Монтируем .dvc/config.local с credentials
+      - ./.dvc:/app/project/.dvc
+      - ./models:/app/project/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
 volumes:
   postgres-db:
   airflow-logs:
