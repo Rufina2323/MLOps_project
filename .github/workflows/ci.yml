@@ -1,0 +1,142 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-lint-${{ hashFiles('requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-lint-
+
+      - name: Install linters
+        run: |
+          pip install --upgrade pip
+          pip install flake8 isort
+
+      - name: Run flake8
+        run: |
+          flake8 api/ tests/ --count --show-source --statistics
+
+      - name: Check import sorting
+        run: |
+          isort api/ tests/ --check-only --diff
+
+  dvc-check:
+    name: Check DVC Data & Model
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install DVC
+        run: |
+          pip install --upgrade pip
+          pip install dvc[s3]
+
+      - name: Configure DVC remote credentials
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        run: |
+          # Если используется S3-совместимое хранилище (MinIO и т.д.),
+          # раскомментируйте и настройте:
+          # dvc remote modify myremote endpointurl ${{ secrets.DVC_ENDPOINT_URL }}
+          echo "DVC remote configured"
+
+      - name: Pull data from DVC
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        run: |
+          dvc pull -v
+
+      - name: Verify data file exists
+        run: |
+          echo "Checking data files..."
+          test -f data/winequality-red.csv && echo "Data file exists" || (echo "Data file missing" && exit 1)
+          echo "Data file size: $(wc -c < data/winequality-red.csv) bytes"
+          echo "Data file lines: $(wc -l < data/winequality-red.csv)"
+
+      - name: Verify model file exists
+        run: |
+          echo "Checking model files..."
+          test -f models/ridge_model.pkl && echo "Model file exists" || (echo "Model file missing" && exit 1)
+          test -f models/model_metadata.json && echo "Metadata file exists" || echo "⚠️ Metadata file missing (not critical)"
+          echo "Model file size: $(wc -c < models/ridge_model.pkl) bytes"
+
+  test:
+    name: Run API Tests
+    runs-on: ubuntu-latest
+    needs: [lint]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-test-${{ hashFiles('requirements-dev.txt', 'api/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-test-
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r api/requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Create mock model for tests
+        run: |
+          python tests/create_mock_model.py
+
+      - name: Run tests
+        env:
+          PROJECT_ROOT: ${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/api
+        run: |
+          pytest tests/ -v --tb=short -x --junitxml=test-results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results.xml
