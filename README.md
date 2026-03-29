@@ -1,10 +1,112 @@
-# Model Selection Report
+# MLOps Project — Wine Quality Prediction
 
-## Описание задачи
+Проект по предсказанию качества красного вина с полным MLOps-пайплайном:
+автоматическое обучение модели, версионирование данных, API для инференса и CI/CD.
+
+## Project Structure
+```
+MLOps_project/
+│
+├── .dvc/ # Конфигурация DVC
+│ ├── config # Remote storage настройки
+│ └── config.local # Локальные credentials (не в git)
+│
+├── .github/
+│ └── workflows/
+│ └── ci.yml # CI/CD пайплайн (lint, dvc check, tests)
+│
+├── airflow/ # Оркестрация обучения
+│ ├── dags/
+│ │ └── train_model_dag.py # DAG: pull data → train → save model
+│ ├── config/
+│ │ └── model_config.yaml # Параметры модели (Ridge alpha, etc.)
+│ ├── scripts/
+│ │ ├── load_data.py # Загрузка данных из DVC
+│ │ ├── train_model.py # Обучение Ridge модели
+│ │ └── save_model.py # Сохранение модели в DVC
+│ ├── Dockerfile # Docker-образ для Airflow
+│ └── requirements.txt # Python-зависимости Airflow
+│
+├── api/ # REST API для инференса
+│ ├── init.py
+│ ├── main.py # FastAPI приложение, эндпоинты
+│ ├── schemas.py # Pydantic-схемы валидации
+│ ├── model_loader.py # Загрузка модели из DVC при старте
+│ ├── config.py # Пути к модели и данным
+│ ├── Dockerfile # Docker-образ для API
+│ └── requirements.txt # Python-зависимости API
+│
+├── data/ # Датасет
+│
+├── models/ # Обученные модели (tracked by DVC)
+│
+├── src/ # ClearML эксперименты
+│
+├── tests/ # Тесты API
+│
+├── docker-compose.yaml # Все сервисы: Airflow + API + PostgreSQL
+├── requirements-dev.txt # Зависимости для разработки и тестов
+├── pyproject.toml # Настройки isort, pytest
+├── .flake8 # Настройки линтера
+├── .gitignore
+├── .dvcignore
+└── README.md
+```
+---
+
+## Быстрый старт
+
+### Предварительные требования
+
+- Docker и Docker Compose
+- Python 3.11 или 3.12
+- Git
+- Настроенный DVC remote (credentials в `.dvc/config.local`)
+
+### Клонирование репозитория
+
+```bash
+git clone https://github.com/Rufina2323/MLOps_project.git
+cd MLOps_project
+```
+
+### Запуск всех компонентов (Docker)
+Полный стек: Airflow + API
+```bash
+# Сборка образов
+docker-compose build
+
+# Инициализация Airflow (выполнить один раз)
+docker-compose up airflow-init
+
+# Запуск всех сервисов
+docker-compose up -d
+
+# Проверка статуса
+docker-compose ps
+```
+
+|Сервис| URL|
+|------|------|
+|Airflow UI| http://localhost:8080 |
+|Wine API | http://localhost:8000 |
+|API Docs (Swagger) | http://localhost:8000/docs |
+
+### Остановка
+```bash
+docker-compose down
+
+# С удалением volumes (БД Airflow, логи)
+docker-compose down -v
+```
+
+## Model Selection Report
+
+### Описание задачи
 
 В рамках проекта была решена задача регрессии: предсказание оценки качества вина (`quality`) на основе набора физико-химических признаков.
 
-## Проведённые эксперименты
+### Проведённые эксперименты
 
 В ходе работы были обучены и сравнены следующие модели:
 
@@ -39,7 +141,7 @@
 - `{"alpha": 10.0, "fit_intercept": True}`
 - `{"alpha": 1.0, "fit_intercept": False}`
 
-## Используемые метрики
+### Используемые метрики
 
 Для оценки качества моделей использовались следующие метрики:
 
@@ -47,7 +149,7 @@
 - **MAE (Mean Absolute Error)** — средняя абсолютная ошибка  
 - **R² (коэффициент детерминации)** — показывает, насколько хорошо модель объясняет дисперсию данных  
 
-## Результаты экспериментов
+### Результаты экспериментов
 
 | Model | RMSE | MAE | R² | Link |
 |------|------|-----|-----|-----|
@@ -63,7 +165,7 @@
 [Open model evaluation in ClearML](https://app.clear.ml/projects/e0ba2a2b587045228fc85099eb166bde/experiments/a416ea9dac7c451bbc2bc18e4c2ad8fd/output/execution)
 
 
-## Выбор лучшей модели
+### Выбор лучшей модели
 
 Наилучшие результаты показала модель **Ridge Regression**.
 
@@ -78,7 +180,7 @@ Decision Tree показала худшие результаты:
 - более низкий R²
 - признаки переобучения
 
-## Итог
+### Итог
 
 - Лучшая модель: **Ridge Regression**
 - Основная метрика выбора: **RMSE**
