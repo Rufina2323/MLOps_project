@@ -205,6 +205,27 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
 .DS_Store
 /src/models/
 /src/model_comparison.csv
+
+# Airflow
+airflow-logs/
+airflow/logs/
+
+# Models (tracked by DVC)
+models/*.pkl
+models/*.json
+models/.gitkeep
+!models/.dvc
+
+# Docker
+postgres-db/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+/models
