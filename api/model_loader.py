@@ -1,11 +1,11 @@
-import subprocess
-import pickle
 import json
 import logging
+import pickle
+import subprocess
 from typing import Optional
-import numpy as np
 
-from config import PROJECT_ROOT, MODEL_PATH, METADATA_PATH
+import numpy as np
+from config import METADATA_PATH, MODEL_PATH, PROJECT_ROOT
 
 logger = logging.getLogger(__name__)
 

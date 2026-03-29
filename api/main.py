@@ -1,20 +1,18 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from fastapi import Request
 import uvicorn
-
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from model_loader import model_manager
 from schemas import (
-    WineFeatures,
-    PredictionResponse,
+    ErrorResponse,
     HealthResponse,
     ModelInfoResponse,
-    ErrorResponse,
+    PredictionResponse,
+    WineFeatures,
 )
-from model_loader import model_manager
 
 logging.basicConfig(
     level=logging.INFO,
